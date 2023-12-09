@@ -19,6 +19,43 @@ const myWindow = window as MyWinow;
 
 const SOURCE_LANG_KEY = "translationSourceLanguage";
 
+async function fetchWords(text: string, delay: number = 1_000, controller: {cancel?: boolean} = {}) {
+    const wordRegex = /[^\p{P}\s\u4e00-\u9fff]+|[\u4e00-\u9fff]/gu;
+    const words = [...text.matchAll(wordRegex)].map(match => match[0]);
+    // shuffle order
+    words.sort(() => Math.random() - 0.5);
+    for (const word of words) {
+        if (controller.cancel) {
+            return;
+        }
+        if (word.length > 20) continue;
+        const params = getTranslateWordParams(word);
+        if (!fetchTranslations.hasCachedValue(params)) {
+            console.log("fetching", word);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            await fetchTranslations(params);
+        }
+    }
+}
+
+function fetchRandomWords() {
+    async function go(controller: {cancel: boolean}) {
+        const documentText = document.body.innerText;
+        await fetchWords(documentText, 1_000, controller);
+        await new Promise(resolve => setTimeout(resolve, 1_000));
+        setTimeout(() => go(controller));
+    }
+
+    const myThis = fetchRandomWords as { cancel?: () => void };
+    if (myThis.cancel) {
+        myThis.cancel();
+    }
+    const controller = { cancel: false };
+    go(controller);
+    myThis.cancel = () => { controller.cancel = true; };
+    return () => { controller.cancel = true; };
+}
+
 function getSourceLanguage(): string {
     const lang = myWindow.translationSourceLanguage || "auto";
     if (lang === "auto") {
@@ -62,6 +99,16 @@ function getWordAtMousePosition(event: MouseEvent) {
     }
 }
 
+function getTranslateWordParams(text: string): FetchTranslationsParams {
+    return {
+        sourceLanguage: getSourceLanguage(),
+        targetLanguage: getTargetLanguage(),
+        hostLanguage: navigator?.language?.slice(0, 2) || "en-US",
+        query: text,
+        type: ["t", "bd", "rm"],
+    };
+}
+
 async function translateWordOnMouseMove(event: MouseEvent) {
     // ignore if mouse is over tooltip
     if (myWindow.translationTooltip?.isOver(event)) {
@@ -74,13 +121,7 @@ async function translateWordOnMouseMove(event: MouseEvent) {
     const canFetch = Date.now() - lastCalled > debounceTime;
     const textToTranslate = getWordAtMousePosition(event);
     if (textToTranslate) {
-        const params: FetchTranslationsParams = {
-            sourceLanguage: getSourceLanguage(),
-            targetLanguage: getTargetLanguage(),
-            hostLanguage: navigator?.language?.slice(0, 2) || "en-US",
-            query: textToTranslate,
-            type: ["bd", "rm"],
-        };
+        const params = getTranslateWordParams(textToTranslate);
         const cacheHit = fetchTranslations.hasCachedValue(params);
         if (!canFetch && !cacheHit) {
             if (myThis.cancel) {
@@ -92,25 +133,20 @@ async function translateWordOnMouseMove(event: MouseEvent) {
             return;
         }
         let data = await fetchTranslations(params);
-        if (!data.dict) {
-            params.type = ["t", "rm"];
-            data = await fetchTranslations(params);
-        }
-         console.log({textToTranslate, data, params});
         const dict = data.dict?.[0];
         const entry = dict?.entry;
         const translits = data.sentences?.map(s => s.src_translit).filter(s => s) || [];
         const header = textToTranslate + (translits.length ? " (" + translits.join(" / ") + ")" : "");
+        let explanation = "";
         if (entry && entry.length) {
             const mainTerms = entry.filter(entry => (entry.score || 0) > 0.25).map(entry => entry.word) || [];
             const minorTerms = entry.filter(entry => (entry.score || 0) <= 0.25).map(entry => entry.word).slice(0, 3) || [];
-            myWindow.translationTooltip?.show(
-                header + ": " + mainTerms.join(" / ") + (minorTerms.length ? " (" + minorTerms.join(" / ") + ")" : "")
-            );
+            explanation = mainTerms.join(" / ") + (minorTerms.length ? " (" + minorTerms.join(" / ") + ")" : "");
         } else if (data.sentences && data.sentences.length) {
-            myWindow.translationTooltip?.show(
-                header + ": " + data.sentences?.map(s => s.trans).filter(s => s).join(" / ") || "Error"
-            );
+            explanation = data.sentences?.map(s => s.trans).filter(s => s).join(" / ") || "";
+        }
+        if (explanation) {
+            myWindow.translationTooltip?.show(header + ": " + explanation);
         }
     } else {
         myWindow.translationTooltip?.hide();
@@ -127,11 +163,12 @@ async function translatePhraseOnMouseClick(event: MouseEvent) {
         clamp(roundOffset + halfMaxPhrase, Math.min(maxPhraseLength, text.length), text.length)
     );
     const textToTranslateTrimLeft = (
-        (offset > halfMaxPhrase ? textToTranslateFat.replace(/^[^\s]+\s*/, "") : textToTranslateFat)
+        (offset > halfMaxPhrase ? textToTranslateFat.replace(/^[^\p{P}\s]+\s*/u, "") : textToTranslateFat)
     );
     const textToTranslate = (
-        (offset < text.length - halfMaxPhrase ? textToTranslateTrimLeft.replace(/\s*[^\s]+$/, "") : textToTranslateTrimLeft)
+        (offset < text.length - halfMaxPhrase ? textToTranslateTrimLeft.replace(/\s*[^\p{P}\s]+$/u, "") : textToTranslateTrimLeft)
     );
+    fetchWords(textToTranslate, 100);
     if (textToTranslate) {
         const params: FetchTranslationsParams = {
             sourceLanguage: getSourceLanguage(),
@@ -141,7 +178,7 @@ async function translatePhraseOnMouseClick(event: MouseEvent) {
             type: ["t", "rm"],
         };
         const data = await fetchTranslations(params);
-        console.log({text, offset, roundOffset, textToTranslate, data, params});
+        // console.log({text, offset, roundOffset, textToTranslate, data, params});
         myWindow.translationTooltip?.show(data.sentences?.map(s => s.trans || s.src_translit).join("\n") || "Error", 1000);
     }
 }
@@ -152,14 +189,9 @@ function onMouseMove(event: MouseEvent) {
 }
 
 function watchMouse() {
-    if (myWindow.cancelTranslator) {
-        myWindow.cancelTranslator();
-        delete myWindow.cancelTranslator;
-    }
-
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("click", translatePhraseOnMouseClick);
-    myWindow.cancelTranslator = () => {
+    return () => {
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("click", translatePhraseOnMouseClick);
     };
@@ -167,8 +199,15 @@ function watchMouse() {
 
 function start() {
     myWindow.translationTooltip = new Tooltip();
+    myWindow.translationTooltip.register();
     promptSourceLanguage();
-    watchMouse();
+    const cancelMouse = watchMouse();
+    const cancelRandomWords = fetchRandomWords();
+    myWindow.cancelTranslator = () => {
+        cancelMouse();
+        cancelRandomWords();
+        delete myWindow.cancelTranslator;
+    }
 }
 
 if (document.readyState === "loading") {

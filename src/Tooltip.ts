@@ -3,12 +3,12 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export class Tooltip {
-    private element: HTMLDivElement;
+    private element?: HTMLDivElement;
     private hideTimeout?: number;
     private freezeUntil: number = 0;
-    private lastPosition: { x: number, y: number } = { x: 0, y: 0 };
+    private position = { x: 0, y: 0 };
 
-    constructor() {
+    register() {
         const tooltip = document.createElement("div");
         Object.assign(tooltip.style, {
             position: "fixed",
@@ -24,31 +24,62 @@ export class Tooltip {
         });
         document.body.appendChild(tooltip);
         this.element = tooltip;
+        this.freezeUntil = 0;
+    }
+
+    unregister() {
+        if (!this.requireElement()) {
+            return;
+        }
+        if (this.hideTimeout) {
+            clearTimeout(this.hideTimeout);
+            delete this.hideTimeout;
+        }
+        document.body.removeChild(this.element!);
+        delete this.element;
+    }
+
+    requireElement(): HTMLDivElement {
+        if (this.element == undefined) {
+            throw new Error("Tooltip is not registered");
+        }
+        return this.element;
+    }
+
+    setPosition(x: number, y: number) {
+        Object.assign(this.position, { x, y });
+        const element = this.requireElement();
+        const docWidth = document.documentElement.offsetWidth;
+        const docHeight = document.documentElement.offsetHeight;
+        const xClamp = clamp(x - element.offsetWidth / 2, 0, docWidth - element.offsetWidth);
+        const yClamp = clamp(y + 30, 0, window.innerHeight - element.offsetHeight);
+        element.style.transform = `translate(${xClamp}px, ${yClamp}px)`;
+        //this.element.style.left = `${x}px`;
+        //this.element.style.top = `${y}px`;
+    }
+
+    reposition() {
+        this.setPosition(this.position.x, this.position.y);
     }
 
     move(event: MouseEvent) {
         requestAnimationFrame(() => {
-            const docWidth = document.documentElement.offsetWidth;
-            const docHeight = document.documentElement.offsetHeight;
-            const x = clamp(event.clientX - this.element.offsetWidth / 2, 0, docWidth - this.element.offsetWidth);
-            const y = clamp(event.clientY + 30, 0, window.innerHeight - this.element.offsetHeight);
-            // this.element.style.transform = `translate(${x}px, ${y}px)`;
-            this.element.style.left = `${x}px`;
-            this.element.style.top = `${y}px`;
-            this.lastPosition = { x, y };
+            this.setPosition(event.clientX, event.clientY);
         });
 
     }
 
     show(text: string, freezForMs: number = 0) {
+        const element = this.requireElement();
         const now = Date.now();
         if (now < this.freezeUntil) {
             return;
         }
-        this.element.style.display = "block";
-        this.element.innerText = text;
+        element.style.display = "block";
+        element.innerText = text;
         this.freezeUntil = now + freezForMs;
         this.hideAfterTimeout(30_000);
+        this.reposition();
     }
 
     hideAfterTimeout(ms: number) {
@@ -59,11 +90,13 @@ export class Tooltip {
     }
 
     hide() {
-        this.element.style.display = "none";
+        const element = this.requireElement();
+        element.style.display = "none";
     }
 
     isOver(event: MouseEvent) {
-        const rect = this.element.getBoundingClientRect();
+        const element = this.requireElement();
+        const rect = element.getBoundingClientRect();
         const x = event.clientX;
         const y = event.clientY;
         return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
