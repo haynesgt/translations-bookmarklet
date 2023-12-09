@@ -1,0 +1,12 @@
+{
+	"source": ["src/index.ts", "src/example.html"],
+	"scripts": {
+		"dev": "parcel",
+		"build": "parcel build",
+		"clean": "rm -rf dist && rm -r .parcel-cache",
+		"clean-build": "npm run clean && npm run build"
+	},
+	"dependencies": {
+		"parcel": "^2.10.3"
+	}
+}
