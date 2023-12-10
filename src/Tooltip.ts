@@ -52,9 +52,7 @@ export class Tooltip {
         const docWidth = document.documentElement.offsetWidth;
         const docHeight = window.innerHeight;
         if (adjust) {
-            console.log(x, y, docHeight);
             y += ((y < docHeight * 3 / 4) ? 30 : -30);
-            console.log(x, y, "");
         }
         const xClamp = clamp(x - element.offsetWidth / 2, 0, docWidth - element.offsetWidth);
         const yClamp = clamp(y, element.offsetHeight, docHeight - element.offsetHeight);

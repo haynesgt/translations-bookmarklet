@@ -33,7 +33,7 @@ async function fetchWords(text: string, delay: number = 1_000, controller: {canc
         if (word.length > 20) continue;
         const params = getTranslateWordParams(word);
         if (!fetchTranslations.hasCachedValue(params)) {
-            console.log("fetching", word);
+            // console.log("fetching", word);
             await new Promise(resolve => setTimeout(resolve, delay));
             try {
                 await fetchTranslations(params);
@@ -49,7 +49,7 @@ function fetchRandomWords() {
     async function go(controller: {cancel: boolean}) {
         const documentText = document.body.innerText;
         await fetchWords(documentText, 1_000, controller);
-        await new Promise(resolve => setTimeout(resolve, 1_000));
+        await new Promise(resolve => setTimeout(resolve, 2_000));
         setTimeout(() => go(controller));
     }
 
