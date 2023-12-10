@@ -22,6 +22,6 @@ NEXT_TAG=$(echo $LAST_TAG | awk -F. '{print $1 "." $2 "." $3+1}')
 git add release
 git commit -m "feat: release $NEXT_TAG" || echo "Release already built"
 
-git tag -a $NEXT_TAG
+git tag -a $NEXT_TAG -m "Release $NEXT_TAG"
 
 git push origin HEAD $NEXT_TAG
