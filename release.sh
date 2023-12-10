@@ -7,6 +7,12 @@ git diff HEAD --quiet || (echo "Please commit your changes before releasing" && 
 
 set -e
 
+# install pnpm
+if ! command -v pnpm &> /dev/null
+then
+    npm install -g pnpm
+fi
+
 set +x
 pnpm run clean-build
 mkdir -p release
