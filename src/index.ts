@@ -167,7 +167,7 @@ async function translateWordOnMouseMove(event: MouseEvent) {
 async function translatePhraseOnMouseClick(event: MouseEvent) {
     const [ node, offset ] = getRangeFromMouseEvent(event);
     const text = node?.textContent || "";
-    const maxPhraseLength = 100;
+    const maxPhraseLength = 200;
     const halfMaxPhrase = maxPhraseLength / 2;
     const roundOffset = Math.round(offset / halfMaxPhrase) * halfMaxPhrase;
     const chunkOffsetLeft = clamp(roundOffset - halfMaxPhrase, 0, Math.max(0, text.length - maxPhraseLength));
@@ -185,7 +185,7 @@ async function translatePhraseOnMouseClick(event: MouseEvent) {
     );
     const textToTranslate = (
         ((offset < text.length - halfMaxPhrase || after) ? textToTranslateTrimLeft.replace(/\s*[^\p{P}\s]+$/u, "") : textToTranslateTrimLeft)
-    ).replace(/\n/g, "¶");
+    ).replace(/\n+/g, "¶");
     // debugger;
     fetchWords(textToTranslate, 100);
     if (textToTranslate) {

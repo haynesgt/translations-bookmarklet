@@ -78,7 +78,7 @@ export class Tooltip {
         element.style.display = "block";
         element.innerText = text;
         this.freezeUntil = now + freezForMs;
-        this.hideAfterTimeout(30_000);
+        // this.hideAfterTimeout(30_000);
         this.reposition();
     }
 
