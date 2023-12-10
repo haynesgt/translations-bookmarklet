@@ -20,7 +20,7 @@ LAST_TAG=$(git tag --list | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -g | tail
 NEXT_TAG=$(echo $LAST_TAG | awk -F. '{print $1 "." $2 "." $3+1}')
 
 git add release
-git commit -m "feat: release $NEXT_TAG"
+git commit -m "feat: release $NEXT_TAG" || echo "Release already built"
 
 git tag -a $NEXT_TAG
 
