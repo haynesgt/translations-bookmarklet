@@ -7,44 +7,28 @@ on:
       - v*
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '20'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/index.js
-          asset_name: build
-          asset_content_type: application/zip
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+  
+        - name: Set up Node.js
+          uses: actions/setup-node@v2
+          with:
+            node-version: '14'
+  
+        - name: Install pnpm
+          run: npm install -g pnpm
+  
+        - name: Install dependencies
+          run: pnpm install
+  
+        - name: Build
+          run: pnpm run build
+  
+        - name: Create Release
+          run: |
+            gh release create ${{ github.ref }} ./dist/index.js --title "Release ${{ github.ref }}" --notes "New release ${{ github.ref }}"
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
