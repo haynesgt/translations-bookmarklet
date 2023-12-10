@@ -4,7 +4,9 @@
 		"dev": "parcel",
 		"build": "parcel build",
 		"clean": "rm -rf dist && rm -r .parcel-cache",
-		"clean-build": "npm run clean && npm run build"
+		"clean-build": "npm run clean && npm run build",
+		"release": "./release.sh",
+		"release-build": "./release-build.sh"
 	},
 	"dependencies": {
 		"parcel": "^2.10.3"

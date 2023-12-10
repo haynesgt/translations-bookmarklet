@@ -13,6 +13,7 @@ interface MyWinow extends Window {
     cancelTranslator?: () => void;
     lastLanguage?: string;
     lastLanguageTime?: number;
+    isFetchingRandomWords?: boolean;
 }
 
 const myWindow = window as MyWinow;
@@ -33,7 +34,12 @@ async function fetchWords(text: string, delay: number = 1_000, controller: {canc
         if (!fetchTranslations.hasCachedValue(params)) {
             console.log("fetching", word);
             await new Promise(resolve => setTimeout(resolve, delay));
-            await fetchTranslations(params);
+            try {
+                await fetchTranslations(params);
+            } catch (e) {
+                console.error(e);
+                delay *= 2;
+            }
         }
     }
 }
@@ -46,14 +52,18 @@ function fetchRandomWords() {
         setTimeout(() => go(controller));
     }
 
-    const myThis = fetchRandomWords as { cancel?: () => void };
-    if (myThis.cancel) {
-        myThis.cancel();
+    if (myWindow.isFetchingRandomWords) {
+        return () => {};
     }
+    myWindow.isFetchingRandomWords = true;
+
     const controller = { cancel: false };
     go(controller);
-    myThis.cancel = () => { controller.cancel = true; };
-    return () => { controller.cancel = true; };
+
+    return () => {
+        controller.cancel = true;
+        myWindow.isFetchingRandomWords = false;
+    };
 }
 
 function getSourceLanguage(): string {
@@ -190,10 +200,10 @@ function onMouseMove(event: MouseEvent) {
 
 function watchMouse() {
     document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("click", translatePhraseOnMouseClick);
+    document.addEventListener("mousedown", translatePhraseOnMouseClick);
     return () => {
         document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("click", translatePhraseOnMouseClick);
+        document.removeEventListener("mousedown", translatePhraseOnMouseClick);
     };
 }
 
