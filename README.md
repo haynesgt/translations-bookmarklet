@@ -1,16 +1,10 @@
 # Installation
 
-Download index.js from the latest releast [here](https://github.com/haynesgt/translations-bookmarklet/releases).
+Follow the instructions [here](https://raw.githack.com/haynesgt/translations-bookmarklet/main/release/bookmarklet.html).
 
-Open it in a text editor and ctrl+c.
+Or view the raw js [here](https://raw.githubusercontent.com/haynesgt/translations-bookmarklet/main/release/bookmarklet.js).
 
-Create a new bookmark.
-
-In the url, type `javascript:` and ctrl+v. The url should look like `javascript: (()=>{function e(e){...`
-
-Save the bookmark.
-
-## Usage
+# Usage
 
 Go to a page like [this test page](https://htmlpreview.github.io/?https://github.com/haynesgt/translations-bookmarklet/blob/main/src/example.html) and click the bookmark to try it out.
 
