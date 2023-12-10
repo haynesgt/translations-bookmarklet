@@ -2,7 +2,7 @@
 
 Follow the instructions [here](https://raw.githack.com/haynesgt/translations-bookmarklet/main/release/bookmarklet.html).
 
-Or view the raw js [here](https://raw.githubusercontent.com/haynesgt/translations-bookmarklet/main/release/bookmarklet.js).
+Or view the raw js [here](https://raw.githubusercontent.com/haynesgt/translations-bookmarklet/main/release/index.js).
 
 # Usage
 
