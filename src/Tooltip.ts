@@ -16,6 +16,7 @@ export class Tooltip {
             pointerEvents: "none",
             zIndex: "1000",
             backgroundColor: "white",
+            color: "black",
             padding: "2px",
             border: "1px solid black",
             borderRadius: "2px",
@@ -46,25 +47,31 @@ export class Tooltip {
         return this.element;
     }
 
-    setPosition(x: number, y: number) {
-        Object.assign(this.position, { x, y });
+    setPosition(x: number, y: number, adjust: boolean) {
         const element = this.requireElement();
         const docWidth = document.documentElement.offsetWidth;
-        const docHeight = document.documentElement.offsetHeight;
+        const docHeight = window.innerHeight;
+        if (adjust) {
+            console.log(x, y, docHeight);
+            y += ((y < docHeight * 3 / 4) ? 30 : -30);
+            console.log(x, y, "");
+        }
         const xClamp = clamp(x - element.offsetWidth / 2, 0, docWidth - element.offsetWidth);
-        const yClamp = clamp(y + 30, 0, window.innerHeight - element.offsetHeight);
+        const yClamp = clamp(y, element.offsetHeight, docHeight - element.offsetHeight);
+        // transform should have lower latency than left/top
         element.style.transform = `translate(${xClamp}px, ${yClamp}px)`;
-        //this.element.style.left = `${x}px`;
-        //this.element.style.top = `${y}px`;
+        // this.element.style.left = `${x}px`;
+        // this.element.style.top = `${y}px`;
+        Object.assign(this.position, { x, y });
     }
 
     reposition() {
-        this.setPosition(this.position.x, this.position.y);
+        this.setPosition(this.position.x, this.position.y, false);
     }
 
     move(event: MouseEvent) {
         requestAnimationFrame(() => {
-            this.setPosition(event.clientX, event.clientY);
+            this.setPosition(event.clientX, event.clientY, true);
         });
 
     }
