@@ -1,7 +1,7 @@
 export function getTextNextToElement(
-    element: HTMLElement,
+    element: Node,
     length: number,
-    direction: "next" | "previous" = "next"
+    direction: "next" | "previous"
 ): string {
     if (length <= 0) {
         return "";
@@ -26,7 +26,7 @@ export function getTextNextToElement(
         }
     }
     if (length && parent) {
-        texts.push(getTextNextToElement(parent, length));
+        texts.push(getTextNextToElement(parent, length, direction));
     }
     if (direction === "previous") {
         texts.reverse();
@@ -35,7 +35,7 @@ export function getTextNextToElement(
 }
 
 export function getTextSurroundingElement(
-    element: HTMLElement,
+    element: Node,
     before: number,
     after: number,
 ): string[] {

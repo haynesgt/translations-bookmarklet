@@ -5,7 +5,7 @@ import { topLanguageCodes } from "./languageCodes";
 import { Tooltip } from "./Tooltip";
 import { getWordAtOffset } from "./getWordAtOffset";
 import { clamp } from "./util";
-import { getTextSurroundingElement } from "./getSurroundingText";
+import { getTextSurroundingElement } from "./getTextSurroundingElement";
 
 interface MyWinow extends Window {
     translationSourceLanguage?: string;
@@ -106,7 +106,7 @@ function promptSourceLanguage() {
 function getWordAtMousePosition(event: MouseEvent) {
     const [ text, offset ] = getRangeFromMouseEvent(event);
     if (text) {
-        return getWordAtOffset(text, offset);
+        return getWordAtOffset(text.textContent || "", offset);
     }
 }
 
@@ -165,25 +165,28 @@ async function translateWordOnMouseMove(event: MouseEvent) {
 }
 (window as any).getTextSurroundingElement = getTextSurroundingElement;
 async function translatePhraseOnMouseClick(event: MouseEvent) {
-    const [ text, offset ] = getRangeFromMouseEvent(event);
+    const [ node, offset ] = getRangeFromMouseEvent(event);
+    const text = node?.textContent || "";
     const maxPhraseLength = 100;
     const halfMaxPhrase = maxPhraseLength / 2;
     const roundOffset = Math.round(offset / halfMaxPhrase) * halfMaxPhrase;
     const chunkOffsetLeft = clamp(roundOffset - halfMaxPhrase, 0, Math.max(0, text.length - maxPhraseLength));
     const chunkOffsetRight = clamp(roundOffset + halfMaxPhrase, Math.min(maxPhraseLength, text.length), text.length);
 
-    const [before, after] = getTextSurroundingElement(
-        event.target as HTMLElement,
+    const [before, after] = node ? getTextSurroundingElement(
+        node,
         halfMaxPhrase - roundOffset,
-        roundOffset - (text.length - halfMaxPhrase));
+        roundOffset - (text.length - halfMaxPhrase)
+    ) : ["", ""];
 
     const textToTranslateFat = before + text.slice(chunkOffsetLeft, chunkOffsetRight) + after;
     const textToTranslateTrimLeft = (
-        (offset > halfMaxPhrase || before ? textToTranslateFat.replace(/^[^\p{P}\s]+\s*/u, "") : textToTranslateFat)
+        ((offset > halfMaxPhrase || before) ? textToTranslateFat.replace(/^[^\p{P}\s]+\s*/u, "") : textToTranslateFat)
     );
     const textToTranslate = (
-        (offset < text.length - halfMaxPhrase || after ? textToTranslateTrimLeft.replace(/\s*[^\p{P}\s]+$/u, "") : textToTranslateTrimLeft)
-    ).replace(/\n/g, " ");
+        ((offset < text.length - halfMaxPhrase || after) ? textToTranslateTrimLeft.replace(/\s*[^\p{P}\s]+$/u, "") : textToTranslateTrimLeft)
+    ).replace(/\n/g, "¶");
+    // debugger;
     fetchWords(textToTranslate, 100);
     if (textToTranslate) {
         const params: FetchTranslationsParams = {
