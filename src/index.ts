@@ -83,7 +83,7 @@ function setSourceLanguage(lang: string) {
 }
 
 function getTargetLanguage() {
-    return myWindow.translationTargetLanguage || "en";
+    return myWindow.translationTargetLanguage || navigator?.language?.slice(0, 2) || "en";
 }
 
 function promptSourceLanguage() {
